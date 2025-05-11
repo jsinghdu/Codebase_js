@@ -1,0 +1,24 @@
+# Use ARG for Python version to make it dynamic
+ARG PYTHON_VERSION=3.11.6
+FROM python:${PYTHON_VERSION}-bullseye
+
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PYTHONPATH="/usr/lib/python3.11/site-packages"
+
+# Upgrade pip and display versions for debugging purposes
+RUN pip install --upgrade pip && \
+    pip install ruff && \
+    pip --version && \
+    python --version
+
+
+RUN python3 -m venv --system-site-packages $VIRTUAL_ENV
+
+RUN mkdir -p /app/.state
+
+VOLUME /app/.state
+
+WORKDIR /app
+
+ENTRYPOINT "/bin/sh"

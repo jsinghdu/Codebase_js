@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aip-{org-short-name}-{team-short-name}-{project-short-name}"
+version = "0.0"
+authors = [
+    {name = "{developer}", email = "{developer}@servicenow.com"},
+]
+description = "{my description}"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "mlflow",
+    "rich",
+    "edna.mlops",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel",
+    "jupyter",
+    "pytest",
+    "python-dotenv",
+]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]

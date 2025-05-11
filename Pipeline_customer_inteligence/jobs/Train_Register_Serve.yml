@@ -1,0 +1,65 @@
+name: Train_Register_Serve
+job_clusters:
+  - job_cluster_key: "#{PROJECT}#-cluster"
+    new_cluster:
+      spark_version: latest lts
+      node_type_id: Standard_D8ds_v5
+      num_workers: 0
+      spark_conf:
+        spark.databricks.cluster.profile: singleNode
+        spark.master: 'local[*]'
+        spark.databricks.delta.optimizeWrite.enabled: 'true'
+        spark.databricks.delta.autoCompact.enabled: 'true'
+        spark.databricks.delta.preview.enabled: 'true'
+      spark_env_vars: 
+        PIP_EXTRA_INDEX_URL: "#{PIP_EXTRA_INDEX_URL}#"
+        PIP_TRUSTED_HOST: "#{PIP_TRUSTED_HOST}#"
+        ETC_EXTRA_HOSTS: "#{ETC_EXTRA_HOSTS}#"
+        MLFLOW_NAME_PREFIX: "#{MLFLOW_NAME_PREFIX}#"
+        MLFLOW_TRACKING_USERNAME: "#{MLFLOW_USERNAME}#"
+        MLFLOW_TRACKING_PASSWORD: "#{MLFLOW_PASSWORD}#"
+        MLFLOW_TRACKING_URI: "#{MLFLOW_TRACKING_URI}#"
+        MLFLOW_TRACKING_INSECURE_TLS: "true"
+      init_scripts:
+        - workspace:
+            destination: '#{REPO_PATH}#/init_scripts/install_packages.sh'
+      custom_tags:
+        ResourceClass: SingleNode
+        team: "#{PROJECT}#"
+      policy_id: null
+tasks:
+  - task_key: train
+    description: Run train_head.py
+    job_cluster_key: "#{PROJECT}#-cluster"
+    timeout_seconds: 25200
+    max_retries: 0
+    notebook_task:
+      notebook_path: '#{REPO_PATH}#/train_head'
+      base_parameters: 
+        json_parameters: '#{JOB_PARAMETERS}#'
+  - task_key: register
+    depends_on:
+      - task_key: train
+    description: Run register_head.py
+    job_cluster_key: "#{PROJECT}#-cluster"
+    timeout_seconds: 25200
+    max_retries: 0
+    notebook_task:
+      notebook_path: '#{REPO_PATH}#/register_head'
+      base_parameters: 
+        json_parameters: '#{JOB_PARAMETERS}#'
+  - task_key: serve
+    depends_on:
+      - task_key: register
+    description: Run serve_head.py
+    job_cluster_key: "#{PROJECT}#-cluster"
+    timeout_seconds: 25200
+    max_retries: 0
+    notebook_task:
+      notebook_path: '#{REPO_PATH}#/serve_head'
+      base_parameters: 
+        json_parameters: '#{JOB_PARAMETERS}#'
+schedule:
+  quartz_cron_expression: 0 30 5-23 * * ?
+  timezone_id: US/Central
+webhook_notifications: '#{WEBHOOK_NOTIFICATIONS}#'

@@ -1,0 +1,59 @@
+general:
+  org: dcx
+  team: p13n
+  project: psp
+  poc: true
+  reviewers: &reviewers
+    - "example.name"
+
+workflow:
+  default:
+    - defaults:
+        create: true
+        schedule: false
+        run_at_deployment: false
+        wait_for_run_completion: false
+        fail_on_run_failure: false
+        parameters:
+          webhook_notifications: null
+
+      # These mlflow models will be created and the project will be given permission
+      # to read and write to them.
+      #  - The jobs you create can reference these models.
+      # TODO: fix edna-mlops-workflow, until then create experiments and models in notebooks
+      # models: 
+      #   - name: &model_exp_name "example"
+      #     make_experiment: true
+      #     # ^^^^^^^^^^^^^ If this is true, then we will also create an mlflow experiment
+      #     # with the same name and also grant the project permission to read and write
+      #     # to it.
+      #     tags:
+      #       reviewers: *reviewers
+            
+      #     description: &description |-
+      #       # Example
+      #       This project is responsible for generating an example that can be used as
+      #       a starting point for other projects.
+
+      #       ## A subsection of a description
+      #       I describe really well.
+      
+      # These are "jobs" (scripts) that should be run or scheduled.
+      jobs: 
+        - name: Train_Register_Serve
+          parameters:
+            # model_exp_name: *model_exp_name
+            # model_description: *description
+            model_exp_name: "example"
+            model_description: |-
+      #       # Example
+      #       This project is responsible for generating an example that can be used as
+      #       a starting point for other projects.
+
+      #       ## A subsection of a description
+      #       I describe really well.
+            serve_endpoint_size: "Small"
+            polynomial_order_range: [2, 5]
+            metric_threshold: 0.8
+
+       

@@ -1,0 +1,68 @@
+#!groovy
+pipeline {
+    options { checkoutToSubdirectory('project_repo') }
+    agent {
+        dockerfile {
+            filename 'project_repo/cicd/Containerfile'
+            label 'docker'
+            args '-u root'
+        }
+    }
+    triggers {
+        pollSCM('*/5 * * * 1-5') // every 5th min Mon-Fri
+    }
+    environment {
+        JFROG_CREDS = credentials('edna_jfrog_login')
+        JFROG_PASSWORD = credentials('jfrog_password_urlsafe')
+        PIP_TRUSTED_HOST='dtcs-artifactory.corp.service-now.com'
+        PIP_EXTRA_INDEX_URL="http://$JFROG_CREDS_USR:$JFROG_PASSWORD@$PIP_TRUSTED_HOST/artifactory/api/pypi/edna-pypi-repo/simple"
+
+        dscv_admin_sp_client_id = credentials('subprodterraformSPClientId')
+        dscv_admin_sp_client_secret = credentials('subprodterraformSPClientSecret')
+        tenant_id = credentials('sp-tenant-id')
+        qa_admin_sp_client_id = credentials('subprodterraformSPClientId')
+        qa_admin_sp_client_secret = credentials('subprodterraformSPClientSecret')
+        prod_admin_sp_client_id = credentials('prodterraformSPClientId')
+        prod_admin_sp_client_secret = credentials('prodterraformSPClientSecret')
+        // vvvvv----- These are for project variable overrides and are all NULL by defualt.
+        sf_username = credentials("sf-username")
+        sf_password = credentials("sf-password")
+        sf_role = credentials("sf-role")
+
+        sp_client_id = credentials("sp-client-id")
+        sp_secret = credentials("sp-secret")
+        sp_tenant_id = credentials("sp-tenant-id")
+        
+        mlflow_username = credentials("mlflow-username")
+        mlflow_password = credentials("mlflow-password")
+    }
+    stages {
+        stage('checkout') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'workflow']], userRemoteConfigs: [[credentialsId: 'sn-dt-corp-github-cloud-readonly', url: 'https://github.com/sn-dt-corp/edna-aip-databricks-workflow.git']])
+            }
+        }
+        stage('Sync to Databricks') {
+            steps {
+                sh 'env'
+                sh 'git config --global --add safe.directory ${PWD}/project_repo'
+                sh 'python -m venv ./venv'
+                sh '. ./venv/bin/activate'
+                sh 'pip install workflow/' // install the package
+                sh 'pip install --upgrade edna.mlops'
+                sh '''
+                    mlops-databricks-workflow sync \
+                    ./project_repo \
+                    $GIT_BRANCH \
+                    jenkins@builder \
+                    --no-clean-remote-destination
+                '''
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
